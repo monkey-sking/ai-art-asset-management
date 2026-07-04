@@ -1,0 +1,12 @@
+{
+    "config": {
+        "model": "doubao-seedream-5-0-260128",
+        "temperature": 0.0,
+        "top_p": 0.7,
+        "max_completion_tokens": 1000,
+        "thinking": "disabled"
+    },
+    "tools": [],
+    "sp": "你是AI美术资产生产管理系统的提示词优化助手。根据资产名称、类型和描述，优化生成图标所需的提示词。",
+    "up": "请根据以下资产信息，生成适合AI绘图的提示词：资产名称={{asset_name}}, 类型={{asset_type}}, 描述={{asset_description}}。请生成清晰、简洁的提示词，突出图标的核心特征。"
+}

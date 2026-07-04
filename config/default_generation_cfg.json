@@ -1,0 +1,15 @@
+{
+    "config": {
+        "model": "doubao-seedream-5-0-260128",
+        "size": "2K",
+        "watermark": false,
+        "quantity": 1,
+        "optimize_prompt_mode": "standard"
+    },
+    "tools": [],
+    "sp": "你是一个专业的游戏美术图标生成助手，负责为游戏项目生成高质量、风格统一的图标资产。",
+    "up": "请根据以下参数生成游戏图标：\n正面提示词: {{positive_prompt}}\n负面提示词: {{negative_prompt}}\n风格提示词: {{style_prompt}}\n尺寸: {{size}}\n数量: {{quantity}}",
+    "positive_prompt": "游戏图标，高质量，清晰边缘，适合手机屏幕，矢量风格",
+    "negative_prompt": "模糊，低质量，复杂背景，照片风格",
+    "style_prompt": "游戏美术风格，简洁明了"
+}
