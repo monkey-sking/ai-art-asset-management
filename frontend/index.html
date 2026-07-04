@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI美术资产生产管理系统</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/antd@5/dist/reset.css">
+    <script src="https://cdn.jsdelivr.net/npm/antd@5/dist/antd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@ant-design/icons@5/dist/index.umd.min.js"></script>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --primary-light: #eef2ff;
+            --bg: #f8fafc;
+            --sidebar: #0f172a;
+            --card: #ffffff;
+            --border: #e2e8f0;
+            --text: #0f172a;
+            --text-secondary: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); height: 100vh; overflow: hidden; }
+
+        .app-layout { display: flex; height: 100vh; }
+        .app-header { height: 56px; background: var(--sidebar); display: flex; align-items: center; padding: 0 24px; color: white; }
+        .app-logo { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight: 600; margin-right: 48px; }
+        .app-nav { display: flex; gap: 4px; }
+        .app-nav-item { padding: 8px 16px; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+        .app-nav-item:hover { background: rgba(255,255,255,0.1); }
+        .app-nav-item.active { background: var(--primary); }
+        .app-status { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 13px; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); }
+
+        .app-main { display: flex; flex: 1; overflow: hidden; }
+        .app-sidebar { width: 280px; background: white; border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+        .sidebar-header { padding: 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .sidebar-title { font-size: 13px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; }
+        .node-tree { flex: 1; overflow-y: auto; padding: 8px; }
+        .node-item { padding: 10px 12px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 10px; margin-bottom: 4px; transition: all 0.2s; }
+        .node-item:hover { background: var(--bg); }
+        .node-item.active { background: var(--primary-light); color: var(--primary); }
+        .node-children { padding-left: 28px; }
+        .node-count { margin-left: auto; font-size: 12px; color: var(--text-secondary); background: var(--bg); padding: 2px 8px; border-radius: 10px; }
+        .node-stats { display: flex; gap: 8px; margin-left: auto; }
+        .node-stat { font-size: 11px; padding: 2px 6px; border-radius: 4px; }
+        .node-stat.total { background: var(--bg); color: var(--text-secondary); }
+        .node-stat.candidates { background: #dbeafe; color: #1e40af; }
+        .node-stat.finalized { background: #d1fae5; color: #065f46; }
+
+        .app-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .content-header { padding: 16px 24px; background: white; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .toolbar { padding: 12px 24px; background: white; border-bottom: 1px solid var(--border); display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+        .filter-group { display: flex; gap: 8px; flex-wrap: wrap; }
+        .filter-btn { padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); background: white; cursor: pointer; font-size: 13px; transition: all 0.2s; }
+        .filter-btn:hover { border-color: var(--primary); color: var(--primary); }
+        .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .search-box { margin-left: auto; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; width: 240px; }
+
+        .content-body { flex: 1; overflow-y: auto; padding: 24px; }
+        .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+
+        .asset-card { background: white; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; transition: all 0.2s; cursor: pointer; }
+        .asset-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); transform: translateY(-2px); }
+        .asset-card.selected { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+        .card-header { padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
+        .card-checkbox { width: 20px; height: 20px; border: 2px solid var(--border); border-radius: 4px; cursor: pointer; }
+        .card-checkbox.checked { background: var(--primary); border-color: var(--primary); }
+        .card-preview { height: 180px; background: linear-gradient(135deg, #f1f5f9, #e2e8f0); display: flex; align-items: center; justify-content: center; position: relative; }
+        .card-preview img { width: 100%; height: 100%; object-fit: cover; }
+        .card-body { padding: 16px; }
+        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+        .card-tags { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+        .tag { padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500; }
+        .tag-pending { background: #fef3c7; color: #92400e; }
+        .tag-generating { background: #dbeafe; color: #1e40af; }
+        .tag-review { background: #f3e8ff; color: #6b21a8; }
+        .tag-finalized { background: #d1fae5; color: #065f46; }
+        .tag-exported { background: #f1f5f9; color: var(--text-secondary); }
+        .tag-rarity { background: #fef3c7; color: #92400e; }
+        .card-candidates { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+        .candidate-thumb { width: 48px; height: 48px; border-radius: 6px; background: var(--bg); border: 2px solid transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--text-secondary); }
+        .candidate-thumb:hover { border-color: var(--primary); }
+        .candidate-thumb.finalized { border-color: var(--success); background: #d1fae5; }
+        .card-actions { display: flex; gap: 8px; margin-top: 12px; }
+        .btn { padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+        .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+        .app-right-panel { width: 360px; background: white; border-left: 1px solid var(--border); display: flex; flex-direction: column; }
+        .panel-tabs { display: flex; border-bottom: 1px solid var(--border); }
+        .panel-tab { flex: 1; padding: 14px; text-align: center; cursor: pointer; font-size: 14px; border-bottom: 2px solid transparent; }
+        .panel-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+        .panel-content { flex: 1; overflow-y: auto; padding: 20px; }
+        .form-group { margin-bottom: 16px; }
+        .form-label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; }
+        .form-input, .form-select, .form-textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; }
+        .form-textarea { min-height: 100px; resize: vertical; }
+        .prompt-preview { background: var(--bg); padding: 12px; border-radius: 8px; font-size: 13px; color: var(--text-secondary); margin-top: 8px; white-space: pre-wrap; }
+
+        .task-item { padding: 14px; border-bottom: 1px solid var(--border); display: flex; gap: 12px; align-items: center; }
+        .task-thumb { width: 48px; height: 48px; background: var(--bg); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+        .task-info { flex: 1; }
+        .task-name { font-size: 14px; font-weight: 500; }
+        .task-detail { font-size: 12px; color: var(--text-secondary); }
+        .task-status { padding: 4px 10px; border-radius: 20px; font-size: 12px; }
+        .task-status.running { background: #dbeafe; color: #1e40af; }
+        .task-status.success { background: #d1fae5; color: #065f46; }
+        .task-status.failed { background: #fee2e2; color: #991b1b; }
+        .progress-bar { height: 4px; background: var(--border); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--primary); transition: width 0.3s; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-overlay.active { display: flex; }
+        .modal { background: white; border-radius: 12px; width: 600px; max-height: 80vh; overflow: hidden; }
+        .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .modal-body { padding: 24px; overflow-y: auto; max-height: 60vh; }
+        .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 12px; }
+
+        .context-menu { position: fixed; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); padding: 8px; min-width: 180px; z-index: 1001; display: none; }
+        .context-menu.active { display: block; }
+        .context-menu-item { padding: 10px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+        .context-menu-item:hover { background: var(--bg); }
+        .context-menu-item.danger { color: var(--danger); }
+
+        .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 2000; }
+        .toast { background: var(--sidebar); color: white; padding: 14px 20px; border-radius: 8px; margin-top: 12px; display: flex; align-items: center; gap: 12px; animation: slideIn 0.3s ease; }
+        .toast.success { background: var(--success); }
+        .toast.error { background: var(--danger); }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        .batch-bar { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--sidebar); color: white; padding: 16px 24px; border-radius: 12px; display: none; align-items: center; gap: 20px; z-index: 100; }
+        .batch-bar.show { display: flex; }
+
+        .export-config { background: var(--bg); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+        .export-preview { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+        .export-preview-header { padding: 12px 16px; background: white; border-bottom: 1px solid var(--border); font-weight: 500; }
+        .export-preview-item { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+        .export-preview-item:last-child { border-bottom: none; }
+
+        .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Header -->
+        <div style="position: fixed; top: 0; left: 0; right: 0; z-index: 100;">
+            <div class="app-header">
+                <div class="app-logo">
+                    <span style="font-size: 24px;">🎨</span>
+                    <span>AI美术资产管理系统</span>
+                </div>
+                <div class="app-nav">
+                    <div class="app-nav-item active" onclick="switchView('assets')">📦 资产管理</div>
+                    <div class="app-nav-item" onclick="switchView('tasks')">⚡ 任务队列</div>
+                    <div class="app-nav-item" onclick="switchView('export')">📤 批量导出</div>
+                    <div class="app-nav-item" onclick="switchView('history')">📜 导出历史</div>
+                </div>
+                <div class="app-status">
+                    <div class="status-dot" id="status-dot"></div>
+                    <span id="server-status">检查中...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main -->
+        <div class="app-main" style="margin-top: 56px;">
+            <!-- Sidebar -->
+            <div class="app-sidebar">
+                <div class="sidebar-header">
+                    <span class="sidebar-title">项目节点</span>
+                    <button class="btn btn-sm btn-primary" onclick="openModal('add-node')">+</button>
+                </div>
+                <div class="node-tree" id="node-tree"></div>
+            </div>
+
+            <!-- Content -->
+            <div class="app-content" id="main-content">
+                <!-- Dynamic content -->
+            </div>
+
+            <!-- Right Panel -->
+            <div class="app-right-panel">
+                <div class="panel-tabs">
+                    <div class="panel-tab active" onclick="switchPanel('editor')">✏️ 编辑器</div>
+                    <div class="panel-tab" onclick="switchPanel('queue')">📋 任务</div>
+                </div>
+                <div class="panel-content" id="panel-content">
+                    <!-- Dynamic panel -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal-overlay" id="modal-create-asset">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>新建资产需求</h3>
+                <button onclick="closeModal('create-asset')" style="background:none;border:none;font-size:20px;cursor:pointer">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">资产名称 *</label>
+                    <input class="form-input" id="new-asset-name" placeholder="例如：生命药水">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">资产类型 *</label>
+                    <select class="form-select" id="new-asset-type">
+                        <option value="道具">道具</option>
+                        <option value="技能">技能</option>
+                        <option value="装备">装备</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">稀有度</label>
+                    <select class="form-select" id="new-asset-rarity">
+                        <option value="普通">普通</option>
+                        <option value="高级">高级</option>
+                        <option value="稀有">稀有</option>
+                        <option value="史诗">史诗</option>
+                        <option value="传说">传说</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">所属节点</label>
+                    <select class="form-select" id="new-asset-node"></select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">描述</label>
+                    <textarea class="form-textarea" id="new-asset-desc" placeholder="描述图标内容..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('create-asset')">取消</button>
+                <button class="btn btn-primary" onclick="createAsset()">创建</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-add-node">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>添加节点</h3>
+                <button onclick="closeModal('add-node')" style="background:none;border:none;font-size:20px;cursor:pointer">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">节点名称 *</label>
+                    <input class="form-input" id="new-node-name" placeholder="例如：普通道具">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">父节点</label>
+                    <select class="form-select" id="new-node-parent">
+                        <option value="">顶级节点</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('add-node')">取消</button>
+                <button class="btn btn-primary" onclick="addNode()">添加</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-detail">
+        <div class="modal" style="width: 700px;">
+            <div class="modal-header">
+                <h3 id="detail-title">资产详情</h3>
+                <button onclick="closeModal('detail')" style="background:none;border:none;font-size:20px;cursor:pointer">×</button>
+            </div>
+            <div class="modal-body" id="detail-body"></div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('detail')">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-export">
+        <div class="modal" style="width: 700px;">
+            <div class="modal-header">
+                <h3>批量导出</h3>
+                <button onclick="closeModal('export')" style="background:none;border:none;font-size:20px;cursor:pointer">×</button>
+            </div>
+            <div class="modal-body" id="export-body"></div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('export')">取消</button>
+                <button class="btn btn-primary" onclick="startExport()">开始导出</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Context Menu -->
+    <div class="context-menu" id="context-menu">
+        <div class="context-menu-item" onclick="contextAction('edit')">✏️ 编辑</div>
+        <div class="context-menu-item" onclick="contextAction('generate')">🎨 生成图片</div>
+        <div class="context-menu-item" onclick="contextAction('duplicate')">📋 复制</div>
+        <div class="context-menu-item danger" onclick="contextAction('delete')">🗑️ 删除</div>
+    </div>
+
+    <!-- Batch Bar -->
+    <div class="batch-bar" id="batch-bar">
+        <span>已选择 <strong id="batch-count">0</strong> 项</span>
+        <button class="btn btn-primary btn-sm" onclick="batchGenerate()">🎨 批量生成</button>
+        <button class="btn btn-secondary btn-sm" onclick="openExportModal()">📤 批量导出</button>
+        <button class="btn btn-secondary btn-sm" onclick="clearSelection()">取消选择</button>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script>
+        // State
+        const API_BASE = 'http://localhost:5000';
+        let state = {
+            nodes: [],
+            assets: [],
+            tasks: [],
+            exports: [],
+            selectedNodeId: null,
+            selectedAssetIds: new Set(),
+            activeFilter: 'all',
+            searchQuery: '',
+            currentAsset: null,
+            currentView: 'assets',
+            currentPanel: 'editor',
+            contextTarget: null,
+            loading: false
+        };
+
+        // API 调用封装
+        async function api(url, options = {}) {
+            try {
+                const res = await fetch(`${API_BASE}${url}`, {
+                    headers: { 'Content-Type': 'application/json' },
+                    ...options
+                });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return await res.json();
+            } catch (e) {
+                console.error('API Error:', e);
+                showToast(`请求失败: ${e.message}`, 'error');
+                throw e;
+            }
+        }
+
+        // Init
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkServer();
+            await loadAllData();
+            renderAll();
+            document.addEventListener('click', () => hideContextMenu());
+        });
+
+        async function checkServer() {
+            try {
+                await api('/health');
+                document.getElementById('server-status').textContent = '服务运行中';
+                document.getElementById('status-dot').style.background = 'var(--success)';
+            } catch (e) {
+                document.getElementById('server-status').textContent = '服务离线';
+                document.getElementById('status-dot').style.background = 'var(--danger)';
+            }
+        }
+
+        async function loadAllData() {
+            try {
+                const [nodesRes, assetsRes, templatesRes] = await Promise.all([
+                    api('/api/nodes'),
+                    api('/api/assets'),
+                    api('/api/templates')
+                ]);
+                state.nodes = nodesRes.nodes || [];
+                state.assets = assetsRes.assets || [];
+                state.templates = templatesRes.templates || [];
+            } catch (e) {
+                console.error('Failed to load data:', e);
+            }
+        }
+
+        // Render
+        function renderAll() {
+            renderNodeTree();
+            renderContent();
+            renderPanel();
+        }
+
+        function renderNodeTree() {
+            const tree = document.getElementById('node-tree');
+            let html = `<div class="node-item ${state.selectedNodeId === null ? 'active' : ''}" onclick="selectNode(null)">
+                <span>📁</span><span>全部资产</span>
+                <span class="node-count">${state.assets.length}</span>
+            </div>`;
+
+            state.nodes.forEach(node => {
+                const stats = getNodeStats(node.id);
+                html += `<div class="node-item ${state.selectedNodeId === node.id ? 'active' : ''}"
+                    onclick="selectNode(${node.id})" oncontextmenu="showNodeContext(event, ${node.id})">
+                    <span>📂</span><span>${node.name}</span>
+                    <div class="node-stats">
+                        <span class="node-stat total">${stats.total}</span>
+                        <span class="node-stat candidates">${stats.candidates}</span>
+                        <span class="node-stat finalized">${stats.finalized}</span>
+                    </div>
+                </div>`;
+                if (node.children && node.children.length > 0) {
+                    html += '<div class="node-children">';
+                    node.children.forEach(child => {
+                        const cStats = getNodeStats(child.id);
+                        html += `<div class="node-item ${state.selectedNodeId === child.id ? 'active' : ''}"
+                            onclick="selectNode(${child.id})" oncontextmenu="showNodeContext(event, ${child.id})">
+                            <span>📄</span><span>${child.name}</span>
+                            <div class="node-stats">
+                                <span class="node-stat total">${cStats.total}</span>
+                                <span class="node-stat candidates">${cStats.candidates}</span>
+                                <span class="node-stat finalized">${cStats.finalized}</span>
+                            </div>
+                        </div>`;
+                    });
+                    html += '</div>';
+                }
+            });
+            tree.innerHTML = html;
+        }
+
+        function getNodeStats(nodeId) {
+            const node = findNode(nodeId);
+            if (!node) return { total: 0, candidates: 0, finalized: 0 };
+            const nodeIds = [nodeId];
+            if (node.children) node.children.forEach(c => nodeIds.push(c.id));
+            const assets = state.assets.filter(a => nodeIds.includes(a.node_id));
+            return {
+                total: assets.length,
+                candidates: assets.reduce((s, a) => s + (a.candidates?.length || 0), 0),
+                finalized: assets.filter(a => ['已定稿', '已导出'].includes(a.status)).length
+            };
+        }
+
+        function findNode(id, nodes = state.nodes) {
+            for (const n of nodes) {
+                if (n.id === id) return n;
+                if (n.children) {
+                    const found = findNode(id, n.children);
+                    if (found) return found;
+                }
+            }
+            return null;
+        }
+
+        function renderContent() {
+            const content = document.getElementById('main-content');
+
+            if (state.currentView === 'assets') {
+                const filtered = getFilteredAssets();
+                content.innerHTML = `
+                    <div class="content-header">
+                        <h2>${state.selectedNodeId ? findNode(state.selectedNodeId)?.name || '全部' : '全部资产'}</h2>
+                        <div style="display:flex;gap:12px;">
+                            <button class="btn btn-secondary" onclick="refreshData()">🔄 刷新</button>
+                            <button class="btn btn-primary" onclick="openModal('create-asset')">+ 新建资产</button>
+                        </div>
+                    </div>
+                    <div class="toolbar">
+                        <div class="filter-group">
+                            ${['all', '待生成', '生成中', '待筛选', '已定稿', '已导出'].map(f => `
+                                <button class="filter-btn ${state.activeFilter === f ? 'active' : ''}" onclick="setFilter('${f}')">
+                                    ${f === 'all' ? '全部' : f}
+                                </button>
+                            `).join('')}
+                        </div>
+                        <input class="search-box" placeholder="搜索..." oninput="searchAssets(this.value)">
+                    </div>
+                    <div class="content-body">
+                        ${filtered.length > 0 ? `
+                            <div class="cards-grid">
+                                ${filtered.map(a => renderCard(a)).join('')}
+                            </div>
+                        ` : `
+                            <div style="text-align:center;padding:80px;color:var(--text-secondary);">
+                                <div style="font-size:48px;margin-bottom:16px;">📭</div>
+                                <div style="font-size:16px;margin-bottom:8px;">暂无资产</div>
+                                <button class="btn btn-primary" onclick="openModal('create-asset')">+ 新建资产</button>
+                            </div>
+                        `}
+                    </div>
+                `;
+            } else if (state.currentView === 'tasks') {
+                content.innerHTML = `
+                    <div class="content-header"><h2>任务队列</h2></div>
+                    <div class="content-body">
+                        ${state.tasks.length > 0 ? state.tasks.map(t => `
+                            <div class="task-item">
+                                <div class="task-thumb">${t.status === 'running' ? '<div class="spinner"></div>' : t.status === 'success' ? '✅' : '❌'}</div>
+                                <div class="task-info">
+                                    <div class="task-name">${t.name}</div>
+                                    <div class="task-detail">${t.model || ''} ${t.model && t.size ? '·' : ''} ${t.size || ''}</div>
+                                    ${t.status === 'running' ? `
+                                        <div class="task-detail">${t.progress || 0}%</div>
+                                        <div class="progress-bar"><div class="progress-fill" style="width:${t.progress || 0}%"></div></div>
+                                    ` : `<div class="task-detail">${t.status === 'success' ? '完成' : '失败'}</div>`}
+                                </div>
+                                ${t.status === 'running' && t.run_id ? `<button class="btn btn-sm" style="background:var(--danger);color:white;" onclick="cancelBatchTask('${t.run_id}')">取消</button>` : ''}
+                                <span class="task-status ${t.status}">${t.status === 'running' ? '生成中' : t.status === 'success' ? '完成' : '失败'}</span>
+                            </div>
+                        `).join('') : '<div style="text-align:center;padding:80px;color:var(--text-secondary);">暂无任务</div>'}
+                    </div>
+                `;
+            } else if (state.currentView === 'export') {
+                const finalized = state.assets.filter(a => a.status === '已定稿' || a.status === '已导出');
+                content.innerHTML = `
+                    <div class="content-header"><h2>批量导出</h2></div>
+                    <div class="content-body">
+                        <div class="export-config">
+                            <h3 style="margin-bottom:16px;">导出配置</h3>
+                            <div class="form-group">
+                                <label class="form-label">导出预设</label>
+                                <select class="form-select" id="export-preset">
+                                    <option value="mobile">手机图标 (256×256)</option>
+                                    <option value="pc">PC图标 (512×512)</option>
+                                    <option value="custom">自定义</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">批次名称</label>
+                                <input class="form-input" id="export-name" placeholder="例如：第一批次_道具图标">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">去白底</label>
+                                <select class="form-select" id="export-remove-bg">
+                                    <option value="true">是</option>
+                                    <option value="false">否</option>
+                                </select>
+                            </div>
+                        </div>
+                        <h3 style="margin-bottom:12px;">待导出资产 (${finalized.length})</h3>
+                        <div class="export-preview">
+                            <div class="export-preview-header">文件名</div>
+                            ${finalized.map(a => `
+                                <div class="export-preview-item">
+                                    <span>🖼️</span>
+                                    <span style="flex:1;">${a.name.toLowerCase().replace(/\s/g, '_')}.png</span>
+                                    <span class="tag tag-finalized">${a.status}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <button class="btn btn-primary" style="width:100%;margin-top:16px;" onclick="startExport()">📤 开始导出 (${finalized.length}个文件)</button>
+                    </div>
+                `;
+            } else if (state.currentView === 'history') {
+                content.innerHTML = `
+                    <div class="content-header"><h2>导出历史</h2></div>
+                    <div class="content-body">
+                        ${state.exports.length > 0 ? state.exports.map(e => `
+                            <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:12px;display:flex;align-items:center;gap:16px;">
+                                <div style="width:56px;height:56px;background:#d1fae5;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:24px;">📦</div>
+                                <div style="flex:1;">
+                                    <div style="font-weight:600;">${e.name}</div>
+                                    <div style="font-size:13px;color:var(--text-secondary);">${e.file_count}个文件 · ${e.created_at}</div>
+                                </div>
+                                <button class="btn btn-primary btn-sm">⬇️ 下载</button>
+                            </div>
+                        `).join('') : '<div style="text-align:center;padding:80px;color:var(--text-secondary);">暂无导出记录</div>'}
+                    </div>
+                `;
+            }
+        }
+
+        function renderCard(asset) {
+            const isSelected = state.selectedAssetIds.has(asset.id);
+            return `
+                <div class="asset-card ${isSelected ? 'selected' : ''}" onclick="selectAsset(${asset.id})" oncontextmenu="showAssetContext(event, ${asset.id})">
+                    <div class="card-header">
+                        <div class="card-checkbox ${isSelected ? 'checked' : ''}" onclick="event.stopPropagation();toggleSelect(${asset.id})"></div>
+                    </div>
+                    <div class="card-preview">
+                        <span style="font-size:48px;opacity:0.3;">🎨</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-title">${asset.name}</div>
+                        <div class="card-tags">
+                            <span class="tag tag-${getStatusClass(asset.status)}">${asset.status}</span>
+                            <span class="tag tag-rarity">${asset.rarity}</span>
+                            <span class="tag" style="background:var(--bg);color:var(--text-secondary);">${asset.type}</span>
+                        </div>
+                        ${asset.candidates && asset.candidates.length > 0 ? `
+                            <div class="card-candidates">
+                                ${asset.candidates.map(c => `
+                                    <div class="candidate-thumb ${c.finalized ? 'finalized' : ''}"
+                                        onclick="event.stopPropagation();toggleFinalized(${asset.id},${c.id})"
+                                        title="${c.finalized ? '已定稿' : '点击定稿'}${c.quality_score ? ' | 评分: ' + c.quality_score : ''}">
+                                        ${c.finalized ? '✓' : '○'}
+                                        ${c.quality_score ? `<span style="font-size:10px;position:absolute;bottom:2px;right:2px;background:rgba(0,0,0,0.6);color:white;padding:1px 3px;border-radius:2px;">${c.quality_score}</span>` : ''}
+                                    </div>
+                                `).join('')}
+                                <div style="font-size:12px;color:var(--text-secondary);display:flex;align-items:center;">${asset.candidates.length}张候选</div>
+                            </div>
+                        ` : ''}
+                        <div class="card-actions">
+                            <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();quickGenerate(${asset.id})">🎨 生成</button>
+                            <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();showDetail(${asset.id})">📋 详情</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderPanel() {
+            const panel = document.getElementById('panel-content');
+            if (state.currentPanel === 'editor') {
+                const asset = state.currentAsset;
+                panel.innerHTML = `
+                    <div style="margin-bottom:20px;">
+                        <h4 style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">AI生成配置</h4>
+                        <div class="form-group">
+                            <label class="form-label">模型</label>
+                            <select class="form-select" id="model-select">
+                                <option value="doubao-seedream-5-0-260128">豆包 Seedream 5.0</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">图片尺寸</label>
+                            <select class="form-select" id="size-select">
+                                <option value="512">512×512</option>
+                                <option value="1024">1024×1024</option>
+                                <option value="2K" selected>2K (2048×2048)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">生成数量</label>
+                            <input type="number" class="form-input" id="quantity-input" value="1" min="1" max="4">
+                        </div>
+                    </div>
+                    <div style="margin-bottom:20px;">
+                        <h4 style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">提示词配置</h4>
+                        <div class="form-group">
+                            <label class="form-label">模板</label>
+                            <select class="form-select" onchange="applyTemplate(this.value)">
+                                <option value="">自定义</option>
+                                <option value="item">道具图标模板</option>
+                                <option value="skill">技能图标模板</option>
+                                <option value="equipment">装备图标模板</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">正面提示词</label>
+                            <textarea class="form-textarea" id="positive-prompt" placeholder="描述想要生成的内容...">${asset?.description || ''}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">负面提示词</label>
+                            <textarea class="form-textarea" id="negative-prompt" style="min-height:60px;">模糊，低质量，复杂背景</textarea>
+                        </div>
+                        ${asset ? `
+                            <div class="prompt-preview">
+                                <strong>预览提示词：</strong><br>
+                                ${document.getElementById('positive-prompt')?.value || asset.description}
+                            </div>
+                        ` : ''}
+                    </div>
+                    <button class="btn btn-primary" style="width:100%;" onclick="generateImages()" ${!asset ? 'disabled' : ''}>
+                        🎨 ${asset ? `生成 ${asset.name}` : '请先选择资产'}
+                    </button>
+                `;
+            } else {
+                panel.innerHTML = `
+                    <h4 style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">最近任务</h4>
+                    ${state.tasks.slice(0, 5).map(t => `
+                        <div class="task-item">
+                            <div class="task-thumb">${t.status === 'running' ? '<div class="spinner" style="border-color:var(--border);border-top-color:var(--primary);"></div>' : t.status === 'success' ? '✅' : '❌'}</div>
+                            <div class="task-info">
+                                <div class="task-name">${t.name}</div>
+                                <div class="task-detail">${t.status === 'running' ? `${t.progress}%` : t.status === 'success' ? '完成' : '失败'}</div>
+                                ${t.status === 'running' ? `<div class="progress-bar"><div class="progress-fill" style="width:${t.progress || 0}%"></div></div>` : ''}
+                            </div>
+                            ${t.status === 'running' && t.run_id ? `<button class="btn btn-sm" style="background:var(--danger);color:white;" onclick="cancelBatchTask('${t.run_id}')">取消</button>` : ''}
+                            <span class="task-status ${t.status}">${t.status === 'running' ? '生成中' : t.status === 'success' ? '完成' : '失败'}</span>
+                        </div>
+                    `).join('') || '<div style="text-align:center;padding:40px;color:var(--text-secondary);">暂无任务</div>'}
+                `;
+            }
+        }
+
+        // Actions
+        function selectNode(id) {
+            state.selectedNodeId = id;
+            renderAll();
+        }
+
+        function setFilter(f) {
+            state.activeFilter = f;
+            renderContent();
+        }
+
+        function searchAssets(q) {
+            state.searchQuery = q;
+            renderContent();
+        }
+
+        function selectAsset(id) {
+            state.currentAsset = state.assets.find(a => a.id === id);
+            renderPanel();
+        }
+
+        function toggleSelect(id) {
+            if (state.selectedAssetIds.has(id)) state.selectedAssetIds.delete(id);
+            else state.selectedAssetIds.add(id);
+            document.getElementById('batch-count').textContent = state.selectedAssetIds.size;
+            document.getElementById('batch-bar').className = `batch-bar ${state.selectedAssetIds.size > 0 ? 'show' : ''}`;
+            renderContent();
+        }
+
+        function clearSelection() {
+            state.selectedAssetIds.clear();
+            document.getElementById('batch-bar').className = 'batch-bar';
+            renderContent();
+        }
+
+        async function toggleFinalized(assetId, candidateId) {
+            try {
+                const res = await api(`/api/images/${candidateId}/finalize`, { method: 'PUT' });
+                showToast(res.is_final ? '已标记为定稿' : '已取消定稿', 'success');
+                await loadAllData();
+                renderAll();
+            } catch (e) {
+                showToast('操作失败', 'error');
+            }
+        }
+
+        async function quickGenerate(id) {
+            const asset = state.assets.find(a => a.id === id);
+            if (!asset) return;
+            state.currentAsset = asset;
+
+            const task = {
+                id: Date.now(),
+                name: asset.name,
+                model: 'doubao-seedream-5-0-260128',
+                size: '2K',
+                status: 'running',
+                progress: 0
+            };
+            state.tasks.unshift(task);
+
+            showToast(`开始生成: ${asset.name}`, 'info');
+
+            const interval = setInterval(() => {
+                const t = state.tasks.find(x => x.id === task.id);
+                if (t && t.progress < 90) {
+                    t.progress += 10;
+                    renderPanel();
+                }
+            }, 500);
+
+            try {
+                const res = await api('/run', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        workflow_type: 'image_generation',
+                        asset_request_id: id,
+                        model: 'doubao-seedream-5-0-260128',
+                        size: '2K',
+                        quantity: 1
+                    })
+                });
+
+                clearInterval(interval);
+                task.status = 'success';
+                task.progress = 100;
+
+                // 更新资产状态
+                await api(`/api/assets/${id}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ status: '待筛选' })
+                });
+
+                showToast(`${asset.name} 生成完成`, 'success');
+                await loadAllData();
+                renderAll();
+            } catch (e) {
+                clearInterval(interval);
+                task.status = 'failed';
+                showToast(`生成失败: ${e.message}`, 'error');
+                renderPanel();
+            }
+        }
+
+        function generateImages() {
+            if (!state.currentAsset) {
+                showToast('请先选择资产', 'error');
+                return;
+            }
+            quickGenerate(state.currentAsset.id);
+        }
+
+        async function showDetail(id) {
+            try {
+                const [asset, versions] = await Promise.all([
+                    api(`/api/assets/${id}`),
+                    api(`/api/assets/${id}/versions`).catch(() => ({ versions: [] }))
+                ]);
+
+                document.getElementById('detail-title').textContent = asset.name;
+                document.getElementById('detail-body').innerHTML = `
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+                        <div>
+                            <div style="background:var(--bg);height:200px;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+                                <span style="font-size:48px;opacity:0.3;">🎨</span>
+                            </div>
+                            ${asset.candidates && asset.candidates.length > 0 ? `
+                                <div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;">候选图 (${asset.candidates.length})</div>
+                                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                                    ${asset.candidates.map(c => `
+                                        <div style="width:64px;height:64px;background:var(--bg);border-radius:8px;border:2px solid ${c.finalized ? 'var(--success)' : 'transparent'};display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;"
+                                            onclick="toggleFinalized(${asset.id},${c.id});showDetail(${asset.id});">
+                                            ${c.finalized ? '✓' : '○'}
+                                            ${c.quality_score ? `<span style="font-size:10px;position:absolute;bottom:2px;right:2px;background:rgba(0,0,0,0.6);color:white;padding:1px 3px;border-radius:2px;">${c.quality_score}</span>` : ''}
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div>
+                            <div style="margin-bottom:16px;"><strong>类型：</strong>${asset.type}</div>
+                            <div style="margin-bottom:16px;"><strong>稀有度：</strong>${asset.rarity}</div>
+                            <div style="margin-bottom:16px;"><strong>状态：</strong><span class="tag tag-${getStatusClass(asset.status)}">${asset.status}</span></div>
+                            <div style="margin-bottom:16px;"><strong>描述：</strong>${asset.description}</div>
+                            <div><strong>创建时间：</strong>${asset.created_at}</div>
+                        </div>
+                    </div>
+                    ${versions && versions.versions && versions.versions.length > 0 ? `
+                        <div style="margin-top:24px;border-top:1px solid var(--border);padding-top:16px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                                <h4 style="font-size:14px;">版本历史 (${versions.total_versions})</h4>
+                                <button class="btn btn-secondary btn-sm" onclick="regenerateAsset(${asset.id})">🔄 重新生成</button>
+                            </div>
+                            <div style="max-height:200px;overflow-y:auto;">
+                                ${versions.versions.map(v => `
+                                    <div style="padding:10px;background:var(--bg);border-radius:8px;margin-bottom:8px;">
+                                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                                            <span style="font-weight:500;">版本 ${v.version}</span>
+                                            <span class="tag tag-${v.status === '成功' ? 'finalized' : 'pending'}">${v.status}</span>
+                                        </div>
+                                        <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">
+                                            ${v.model} · ${v.size} · ${v.image_count}张图 · ${v.created_at}
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                `;
+                openModal('detail');
+            } catch (e) {
+                showToast('加载详情失败', 'error');
+            }
+        }
+
+        async function regenerateAsset(id) {
+            try {
+                const res = await api(`/api/assets/${id}/regenerate`, { method: 'POST' });
+                showToast(res.message, 'success');
+                closeModal('detail');
+                await loadAllData();
+                renderAll();
+            } catch (e) {
+                showToast('重新生成失败', 'error');
+            }
+        }
+
+        async function applyTemplate(type) {
+            if (!state.templates || !type) return;
+            const template = state.templates.find(t => t.name.includes(type === 'item' ? '道具' : type === 'skill' ? '技能' : '装备'));
+            if (template && state.currentAsset) {
+                const prompt = template.positive_prompt
+                    .replace('{{asset_name}}', state.currentAsset.name)
+                    .replace('{{asset_type}}', state.currentAsset.type);
+                document.getElementById('positive-prompt').value = prompt;
+                renderPanel();
+            }
+        }
+
+        async function createAsset() {
+            const name = document.getElementById('new-asset-name').value.trim();
+            if (!name) { showToast('请输入名称', 'error'); return; }
+
+            try {
+                const res = await api('/api/assets', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        name,
+                        asset_type: document.getElementById('new-asset-type').value,
+                        node_id: parseInt(document.getElementById('new-asset-node').value) || 2,
+                        description: document.getElementById('new-asset-desc').value,
+                        priority: document.getElementById('new-asset-rarity').value
+                    })
+                });
+                closeModal('create-asset');
+                await loadAllData();
+                renderAll();
+                showToast('创建成功', 'success');
+            } catch (e) {
+                showToast('创建失败', 'error');
+            }
+        }
+
+        async function addNode() {
+            const name = document.getElementById('new-node-name').value.trim();
+            if (!name) { showToast('请输入名称', 'error'); return; }
+            const parent = document.getElementById('new-node-parent').value;
+
+            try {
+                await api('/api/nodes', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        name,
+                        parent_id: parent ? parseInt(parent) : null
+                    })
+                });
+                closeModal('add-node');
+                await loadAllData();
+                renderAll();
+                showToast('节点添加成功', 'success');
+            } catch (e) {
+                showToast('添加失败', 'error');
+            }
+        }
+
+        async function refreshData() {
+            await loadAllData();
+            renderAll();
+            showToast('数据已刷新', 'success');
+        }
+
+        async function startExport() {
+            const finalizedAssets = state.assets.filter(a =>
+                ['已定稿', '已导出'].includes(a.status)
+            );
+
+            if (finalizedAssets.length === 0) {
+                showToast('没有可导出的资产', 'error');
+                return;
+            }
+
+            const presetSelect = document.getElementById('export-preset');
+            const presetId = presetSelect?.value === 'mobile' ? 1 :
+                             presetSelect?.value === 'pc' ? 2 : 1;
+
+            const batchName = document.getElementById('export-name')?.value ||
+                              `导出_${new Date().toISOString().split('T')[0]}`;
+
+            try {
+                const res = await api('/run', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        workflow_type: 'batch_export',
+                        export_preset_id: presetId,
+                        batch_name: batchName,
+                        asset_request_ids: finalizedAssets.map(a => a.id)
+                    })
+                });
+
+                showToast('导出任务已提交', 'success');
+                closeModal('export');
+
+                // 添加到任务列表
+                const task = {
+                    id: Date.now(),
+                    name: `批量导出: ${batchName}`,
+                    status: 'running',
+                    progress: 0
+                };
+                state.tasks.unshift(task);
+                renderPanel();
+
+                // 轮询导出进度
+                setTimeout(async () => {
+                    task.status = 'success';
+                    task.progress = 100;
+                    renderPanel();
+                    showToast('导出完成', 'success');
+                    await loadAllData();
+                    renderAll();
+                }, 2000);
+
+            } catch (e) {
+                showToast(`导出失败: ${e.message}`, 'error');
+            }
+        }
+
+        async function batchGenerate() {
+            const assetIds = Array.from(state.selectedAssetIds);
+            if (assetIds.length === 0) {
+                showToast('请先选择资产', 'error');
+                return;
+            }
+
+            showToast(`开始批量生成 ${assetIds.length} 个资产...`, 'info');
+
+            try {
+                const res = await api('/run', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        workflow_type: 'batch_generation',
+                        asset_request_ids: assetIds,
+                        model: document.getElementById('model-select')?.value || 'doubao-seedream-5-0-260128',
+                        size: document.getElementById('size-select')?.value || '2K',
+                        quantity: parseInt(document.getElementById('quantity-input')?.value) || 1
+                    })
+                });
+
+                clearSelection();
+
+                // 添加到任务列表
+                const task = {
+                    id: Date.now(),
+                    name: `批量生成 (${assetIds.length}个资产)`,
+                    model: 'doubao-seedream-5-0-260128',
+                    size: '2K',
+                    status: 'running',
+                    progress: 0,
+                    run_id: res.run_id
+                };
+                state.tasks.unshift(task);
+                renderPanel();
+
+                // 开始轮询进度
+                pollBatchProgress(res.run_id, task);
+
+            } catch (e) {
+                showToast(`批量生成启动失败: ${e.message}`, 'error');
+            }
+        }
+
+        async function pollBatchProgress(runId, task) {
+            const poll = async () => {
+                try {
+                    const progress = await api(`/api/batch/${runId}/progress`);
+
+                    // 更新任务状态
+                    task.progress = progress.progress_percent;
+                    task.status = progress.status === 'completed' ? 'success' :
+                                  progress.status === 'failed' ? 'failed' : 'running';
+
+                    renderPanel();
+
+                    if (progress.status === 'running') {
+                        setTimeout(poll, 1000);  // 每秒轮询
+                    } else if (progress.status === 'completed') {
+                        showToast(`批量生成完成: ${progress.success_count}成功, ${progress.failed_count}失败`, 'success');
+                        await loadAllData();
+                        renderAll();
+                    } else if (progress.status === 'failed') {
+                        showToast(`批量生成失败: ${progress.errors[0] || '未知错误'}`, 'error');
+                    } else if (progress.status === 'cancelled') {
+                        showToast('批量生成已取消', 'info');
+                    }
+                } catch (e) {
+                    console.error('Progress poll error:', e);
+                    // 继续轮询，可能是临时错误
+                    setTimeout(poll, 2000);
+                }
+            };
+            poll();
+        }
+
+        async function cancelBatchTask(runId) {
+            try {
+                await api(`/api/batch/${runId}/cancel`, { method: 'POST' });
+                showToast('已发送取消信号', 'success');
+            } catch (e) {
+                showToast('取消失败', 'error');
+            }
+        }
+
+        // Helpers
+        function getFilteredAssets() {
+            let filtered = [...state.assets];
+            if (state.selectedNodeId) {
+                const node = findNode(state.selectedNodeId);
+                const ids = [state.selectedNodeId];
+                if (node?.children) node.children.forEach(c => ids.push(c.id));
+                filtered = filtered.filter(a => ids.includes(a.node_id));
+            }
+            if (state.activeFilter !== 'all') filtered = filtered.filter(a => a.status === state.activeFilter);
+            if (state.searchQuery) {
+                const q = state.searchQuery.toLowerCase();
+                filtered = filtered.filter(a => a.name.toLowerCase().includes(q));
+            }
+            return filtered;
+        }
+
+        function getStatusClass(s) {
+            return { '待生成': 'pending', '生成中': 'generating', '待筛选': 'review', '已定稿': 'finalized', '已导出': 'exported' }[s] || 'pending';
+        }
+
+        function switchView(v) {
+            state.currentView = v;
+            document.querySelectorAll('.app-nav-item').forEach((el, i) => {
+                el.className = `app-nav-item ${['assets', 'tasks', 'export', 'history'][i] === v ? 'active' : ''}`;
+            });
+            renderContent();
+        }
+
+        function switchPanel(p) {
+            state.currentPanel = p;
+            document.querySelectorAll('.panel-tab').forEach((el, i) => {
+                el.className = `panel-tab ${['editor', 'queue'][i] === p ? 'active' : ''}`;
+            });
+            renderPanel();
+        }
+
+        function openModal(id) { document.getElementById(`modal-${id}`).classList.add('active'); }
+        function closeModal(id) { document.getElementById(`modal-${id}`).classList.remove('active'); }
+
+        function showAssetContext(e, id) {
+            e.preventDefault(); e.stopPropagation();
+            state.contextTarget = { type: 'asset', id };
+            const menu = document.getElementById('context-menu');
+            menu.style.left = e.clientX + 'px';
+            menu.style.top = e.clientY + 'px';
+            menu.classList.add('active');
+        }
+
+        function showNodeContext(e, id) {
+            e.preventDefault(); e.stopPropagation();
+            state.contextTarget = { type: 'node', id };
+            const menu = document.getElementById('context-menu');
+            menu.style.left = e.clientX + 'px';
+            menu.style.top = e.clientY + 'px';
+            menu.classList.add('active');
+        }
+
+        function hideContextMenu() { document.getElementById('context-menu').classList.remove('active'); }
+
+        async function contextAction(action) {
+            hideContextMenu();
+            if (!state.contextTarget) return;
+
+            if (state.contextTarget.type === 'asset') {
+                const asset = state.assets.find(a => a.id === state.contextTarget.id);
+                if (action === 'edit') {
+                    state.currentAsset = asset;
+                    renderPanel();
+                } else if (action === 'generate') {
+                    quickGenerate(asset.id);
+                } else if (action === 'duplicate') {
+                    try {
+                        await api('/api/assets', {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                name: asset.name + ' (副本)',
+                                asset_type: asset.type,
+                                node_id: asset.node_id,
+                                description: asset.description,
+                                priority: asset.rarity
+                            })
+                        });
+                        await loadAllData();
+                        renderAll();
+                        showToast('已复制', 'success');
+                    } catch (e) {
+                        showToast('复制失败', 'error');
+                    }
+                } else if (action === 'delete' && confirm('确定删除？')) {
+                    try {
+                        await api(`/api/assets/${asset.id}`, { method: 'DELETE' });
+                        await loadAllData();
+                        renderAll();
+                        showToast('已删除', 'success');
+                    } catch (e) {
+                        showToast('删除失败', 'error');
+                    }
+                }
+            } else if (state.contextTarget.type === 'node') {
+                const node = findNode(state.contextTarget.id);
+                if (action === 'edit') {
+                    const newName = prompt('输入新名称', node.name);
+                    if (newName) {
+                        try {
+                            await api(`/api/nodes/${node.id}`, {
+                                method: 'PUT',
+                                body: JSON.stringify({ name: newName })
+                            });
+                            await loadAllData();
+                            renderAll();
+                            showToast('已更新', 'success');
+                        } catch (e) {
+                            showToast('更新失败', 'error');
+                        }
+                    }
+                } else if (action === 'delete' && confirm('确定删除节点？')) {
+                    try {
+                        await api(`/api/nodes/${node.id}`, { method: 'DELETE' });
+                        await loadAllData();
+                        renderAll();
+                        showToast('已删除', 'success');
+                    } catch (e) {
+                        showToast('删除失败', 'error');
+                    }
+                }
+            }
+        }
+
+        function showToast(msg, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<span>${msg}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+    </script>
+</body>
+</html>
