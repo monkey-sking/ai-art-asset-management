@@ -1,7 +1,7 @@
 # AI美术资产生产管理系统
 
 <!-- badges:start -->
-[![Last commit](https://img.shields.io/github/last-commit/monkey-sking/ai-art-asset-management?style=flat-square)](https://github.com/monkey-sking/ai-art-asset-management/commits/master) [![Python](https://img.shields.io/github/languages/top/monkey-sking/ai-art-asset-management?style=flat-square)](https://github.com/monkey-sking/ai-art-asset-management/search?l=Python) [![views](https://hits.sh/github.com/monkey-sking/ai-art-asset-management.svg?style=flat-square&label=views&color=0e75b6)](https://github.com/monkey-sking/ai-art-asset-management)
+[![Last commit](https://img.shields.io/github/last-commit/monkey-sking/ai-art-asset-management?style=flat-square)](https://github.com/monkey-sking/ai-art-asset-management/commits/master) [![Python](https://img.shields.io/github/languages/top/monkey-sking/ai-art-asset-management?style=flat-square)](https://github.com/monkey-sking/ai-art-asset-management/search?l=Python) [![views](https://hits.sh/github.com/monkey-sking/ai-art-asset-management.svg?style=flat-square&label=views&color=0e75b6)](https://github.com/monkey-sking/ai-art-asset-management) [![Stars](https://img.shields.io/github/stars/monkey-sking/ai-art-asset-management?style=flat-square)](https://github.com/monkey-sking/ai-art-asset-management/stargazers) [![Forks](https://img.shields.io/github/forks/monkey-sking/ai-art-asset-management?style=flat-square)](https://github.com/monkey-sking/ai-art-asset-management/network/members)
 <!-- badges:end -->
 
 面向游戏项目的图标类资产生产流水线，统一管理需求、提示词、生成任务、候选图、最终图、导出规格和交付记录。
